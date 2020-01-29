@@ -1,0 +1,23 @@
+name: logsearch
+version: '1.0'
+summary: Tool to simplify searching logfiles for keywords.
+description: |
+    This tool help searching large numbers of logfiles for keywords. It is
+    particularly useful when looking for information in or across multiple
+    sosreports.
+confinement: strict
+grade: stable
+base: core18
+environment:
+  TMPDIR: $SNAP_COMMON/tmp
+
+apps:
+  logsearch:
+    command: logsearch.sh
+    plugs: [home, removable-media]
+parts:
+  logsearch:
+    source: .
+    plugin: dump
+    stage-packages: [coreutils, bsdmainutils]
+
