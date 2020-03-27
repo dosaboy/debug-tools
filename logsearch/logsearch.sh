@@ -35,13 +35,15 @@ USAGE: $cmd_name OPTIONS PATH
 OPTIONS:
     -d|--logdir <name>
         Log directory we want to search. Default is to search everything
-        under PATH/var/log but this allows for PATH/var/log/<name> where
+        under PATH/var/log but this allows for PATH/var/log/<logdir> where
         name can itself be a path.
     -e|--resultfilter <str>
         This is a bit like grep -v i.e. it will filter any matches from the
         results.
     -f|--lognamefilter <str>
-        Filter to exclude names from files we will search.
+        Filter to only include matching filenames in set of files we will
+        search. By default all files found under PATH/var/log/<logdir> will
+        be searched.
     -h|--help
         Print this message.
     -k|--searchkey <str>
