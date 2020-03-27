@@ -9,6 +9,7 @@ include_mismatches=false
 no_ctrl=false
 grepopts=
 maxdepth=1000
+verbose=0  # int so that we can eventually have multiple levels like -v -vv -vvv
 
 # Text Format
 CSI='\033['
@@ -29,21 +30,35 @@ usage ()
 (($#>0)) && [ -n "$1" ] && echo "ERROR: $1" 
 
 cat << EOF
-USAGE: $cmd_name OPTIONS <path>
+USAGE: $cmd_name OPTIONS PATH
 
 OPTIONS:
     -d|--logdir <name>
+        Log directory we want to search. Default is to search everything
+        under PATH/var/log but this allows for PATH/var/log/<name> where
+        name can itself be a path.
     -e|--resultfilter <str>
+        This is a bit like grep -v i.e. it will filter any matches from the
+        results.
     -f|--lognamefilter <str>
+        Filter to exclude names from files we will search.
     -h|--help
+        Print this message.
     -k|--searchkey <str>
+        Search string/data.
     -l|--max-depth <num>"
+        Max search depth.
     -o|--grep-opts <opts>
+        Pass these to grep.
     -r|--no-ctrl-chars
+        Don't print control characters.
+    -v|--verbose
+        Add extra info to the output.
     -x|--report-no-match
+        Report files that didn't match.
 
 EXAMPLES
-    $cmd_name /path/to/sosreport -f syslog -k error
+    $cmd_name -d apache -k error /path/to/sosreport
 
 EOF
 
@@ -53,43 +68,46 @@ EOF
 while (($#)); do
     case $1 in
         -d|--logdir)
-        logdir=$2
-        shift
-        ;;
+            logdir=$2
+            shift
+            ;;
         -e|--resultfilter)
-        resultfilter="$2"
-        shift
-        ;;
+            resultfilter="$2"
+            shift
+            ;;
         -f|--lognamefilter)
-        lognamefilter="$2"
-        shift
-        ;;
+            lognamefilter="$2"
+            shift
+            ;;
         -h)
-        usage "" 0
-        ;;
+            usage "" 0
+            ;;
         -k|--searchkey)
-        searchkey="$2"
-        shift
-        ;;
+            searchkey="$2"
+            shift
+            ;;
         -l|--max-depth)
-        maxdepth="$2"
-        shift
-        ;;
+            maxdepth="$2"
+            shift
+            ;;
         -o|--grep-opts)
-        grepopts="$2"
-        shift
-        ;;
+            grepopts="$2"
+            shift
+            ;;
         -r|--no-ctrl-chars)
-        no_ctrl=true
-        ;;
+            no_ctrl=true
+            ;;
+        -v)
+            verbose=1
+            ;;
         -x|--report-no-match)
-        # i.e. show all files searched
-        include_mismatches=true
-        ;;
+            # i.e. show all files searched
+            include_mismatches=true
+            ;;
         *)
-        sospath=$1
-        while [ "${sospath:(-1)}" = "/" ]; do sospath=${sospath%*/}; done
-        ;;
+            sospath=$1
+            while [ "${sospath:(-1)}" = "/" ]; do sospath=${sospath%*/}; done
+            ;;
     esac
     shift
 done
@@ -134,7 +152,7 @@ if ((${#reports[@]}==0)) || ! [ -d "${reports[0]}" ]; then
     reports=('/')
 fi
 
-echo "Searching path '${reports[@]}'"
+((verbose)) && echo -e "Searching path '${reports[@]}'"
 
 for sos in ${reports[@]}; do
     results=false
@@ -150,7 +168,7 @@ for sos in ${reports[@]}; do
 
     readarray files<<<`ls -rt $logpath| egrep "${lognamefilter}"| tail -n $maxdepth`
 
-    echo -e "\n## Host=`cat $sos/hostname`"
+    ((verbose)) && echo -e "\n## Host=`cat $sos/hostname`\n"
     for file in ${files[@]}; do
         file=$logpath/$file
  
@@ -162,7 +180,7 @@ for sos in ${reports[@]}; do
 
         if [ -s "$ftmp" ] || $include_mismatches; then
             results=true
-            echo -ne "\nMatches found in $file:"
+            echo -ne "Matches found in $file:"
         fi
 
         if [ -s "$ftmp" ]; then
