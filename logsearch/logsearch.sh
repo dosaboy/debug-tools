@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -u
 cmd_name=logsearch
 sospath=.
 searchkey=
@@ -108,36 +108,28 @@ while (($#)); do
             ;;
         *)
             sospath=$1
-            while [ "${sospath:(-1)}" = "/" ]; do sospath=${sospath%*/}; done
+            [ "${sospath:(-1)}" = "/" ] || sospath=${sospath}/
             ;;
     esac
     shift
 done
 
-yellow ()
+_colour ()
 {
-    $no_ctrl && { echo ""; cat $1; echo ""; } && return
-    echo -e ${F_YLW}
-    cat $1
-    echo -e ${RES}
+    $no_ctrl && { echo ""; cat $2; echo ""; } && return
+    echo -e $1
+    cat $2
+    echo -e ${RES}   
 }
 
-green ()
-{
-    $no_ctrl && { echo -e "$1"; } && return
-    echo -e "${F_GRN}$1${RES}"
-}
-
-red ()
-{
-    $no_ctrl && { echo -e "$1"; } && return
-    echo -e "${F_RED}$1${RES}"
-}
+yellow () { _colour $F_YLW $1; }
+green () { _colour $F_GRN $1; }
+red () { _colour $F_RED $1; }
 
 [ -n "$searchkey" ] || usage "search key must be provided" 1
 
 if [ -z "$sospath" ] || ! [ -d "$sospath" ]; then
-    usage "ERROR: valid path required" 1
+    usage "valid path required" 1
 fi
 
 if ! [ -w "$sospath" ] || ! `ls $sospath &>/dev/null`; then
@@ -157,11 +149,8 @@ fi
 ((verbose)) && echo -e "Searching path '${reports[@]}'"
 
 for sos in ${reports[@]}; do
+    [ "${sos:(-1)}" = "/" ] && sos=${sos%*/}
     results=false
-    if [ "$sos" = '/' ]; then
-        sos=''
-    fi
-
 
     logpath=$sos/var/log
     [ -n "$logdir" ] && logpath=$logpath/$logdir
