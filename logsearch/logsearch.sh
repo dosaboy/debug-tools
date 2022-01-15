@@ -7,7 +7,8 @@ lognamefilter=
 resultfilter=
 include_mismatches=false
 no_ctrl=false
-grepopts=
+case_sensitive=false
+grep_opts=
 maxdepth=1000
 verbose=0  # int so that we can eventually have multiple levels like -v -vv -vvv
 
@@ -46,6 +47,8 @@ OPTIONS:
         be searched.
     -h|--help
         Print this message.
+    -I
+        Case sensitive search.
     -k|--searchkey <str>
         Search string/data.
     -l|--max-depth <num>"
@@ -84,6 +87,9 @@ while (($#)); do
         -h)
             usage "" 0
             ;;
+        -I)
+            case_sensitive=true
+            ;;
         -k|--searchkey)
             searchkey="$2"
             shift
@@ -93,7 +99,7 @@ while (($#)); do
             shift
             ;;
         -o|--grep-opts)
-            grepopts="$2"
+            grep_opts+=( $2 )
             shift
             ;;
         -r|--no-ctrl-chars)
@@ -163,10 +169,14 @@ for sos in ${reports[@]}; do
     for file in ${files[@]}; do
         file=$logpath/$file
  
+        if ! $case_sensitive; then
+            grep_opts+=( -i )
+        fi
+
         if [ -n "$resultfilter" ]; then
-            zegrep -i "${searchkey}" $grepopts $file| egrep -iv "$resultfilter" > $ftmp
+            zegrep ${grep_opts[@]} "${searchkey}" $file| egrep -iv "$resultfilter" > $ftmp
         else
-            zegrep -i "${searchkey}" $grepopts $file > $ftmp
+            zegrep ${grep_opts[@]} "${searchkey}" $file > $ftmp
         fi
 
         if [ -s "$ftmp" ] || $include_mismatches; then
